@@ -1,0 +1,60 @@
+version: '3.2'                        # Версия формата docker-compose файла
+
+services:                             # Определение сервисов (контейнеров)
+  rabbitmq1:                          # Первый контейнер RabbitMQ
+    container_name: rabbitmq-01-cn    # Имя контейнера
+    image: rabbitmq:4-management      # Используемый образ (с web-интерфейсом)
+    hostname: rabbitmq-01             # Имя хоста внутри контейнера
+    restart: always                   # Автоматический перезапуск при падении 
+    environment:                      # Переменные окружения для настройки RabbitMQ
+      RABBITMQ_DEFAULT_USER: rmuser   # Логин по умолчанию
+      RABBITMQ_DEFAULT_PASS: rmpass   # Пароль по умолчанию
+      # Дополнительные параметры RabbitMQ:
+      # - Уровни логирования (только ошибки)
+      # - Лимит свободного места на диске (2GB)
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648  
+      RABBITMQ_ERLANG_COOKIE: "sgeRr3EC4sheFs2Ee2s"   # Секретный ключ для аутентификации между узлами кластера 
+    ports:                              # Проброс портов (host:container)
+      - "15672:15672"                   # Web-интерфейс управления (порт хоста должен быть уникальным для каждого узла)
+    volumes:                            # Подключение тома для хранения данных
+      - ./rabbitmq-1:/var/lib/rabbitmq  # Сохраняем данные RabbitMQ в локальную папку
+    networks:                           # Подключение к сети
+      - rabbitmq_cluster
+
+  rabbitmq2:          # Второй контейнер RabbitMQ (аналогичные настройки с небольшими изменениями)
+    container_name: rabbitmq-02-cn
+    image: rabbitmq:4-management
+    hostname: rabbitmq-02
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: rmuser
+      RABBITMQ_DEFAULT_PASS: rmpass
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+      RABBITMQ_ERLANG_COOKIE: "sgeRr3EC4sheFs2Ee2s"
+    ports:
+      - "15673:15672"   # Уникальный порт хоста для второго узла
+    volumes:
+      - ./rabbitmq-2:/var/lib/rabbitmq
+    networks:
+      - rabbitmq_cluster
+
+  rabbitmq3:            # Третий контейнер RabbitMQ
+    container_name: rabbitmq-03-cn
+    image: rabbitmq:4-management
+    hostname: rabbitmq-03
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: rmuser
+      RABBITMQ_DEFAULT_PASS: rmpass
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+      RABBITMQ_ERLANG_COOKIE: "sgeRr3EC4sheFs2Ee2s"
+    ports:
+      - "15674:15672"   # Уникальный порт хоста для третьего узла
+    volumes:
+      - ./rabbitmq-3:/var/lib/rabbitmq
+    networks:
+      - rabbitmq_cluster
+
+networks:               # Определение сети для соединения контейнеров
+  rabbitmq_cluster:
+    driver: bridge      # Используется bridge-сеть для связи между контейнерами
