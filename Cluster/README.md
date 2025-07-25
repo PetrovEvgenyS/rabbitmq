@@ -60,3 +60,36 @@ RABBITMQ_DISK_LIMIT=2147483648
    - Третий узел: [http://localhost:15674](http://localhost:15674)
    - Логин и пароль — из `.env` (`RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS`)
 
+4. **Добавление ноды в кластер**
+   - В Web-интерфейсе обращаем внимание только на поле `Cluster: rabbit@rabbitmq1` - именно по этому имени мы будем дальше подключать ноды.
+   Далее надо зайти в контейнеры (`rabbitmq2` и `rabbitmq3`) и выполнить следующие команды:
+   ```bash
+   docker-compose exec rabbitmq2 bash
+   rabbitmqctl stop_app
+   rabbitmqctl reset
+   rabbitmqctl join_cluster rabbit@rabbitmq-01
+   rabbitmqctl start_app
+   ```
+   На первой ноде никаких действий не требуется! Также мы увидим пачку `warning - про depricated` метод передачи COOKIE, игнорируем.
+
+   Одной командой можно выполнить указанные действия так:
+   ```bash
+   HOST=rabbitmq2; docker-compose exec $HOST rabbitmqctl stop_app && docker-compose exec $HOST rabbitmqctl reset && docker-compose exec $HOST rabbitmqctl join_cluster rabbit@rabbitmq-01 && docker-compose exec $HOST rabbitmqctl start_app
+   ```
+
+   ```bash
+   HOST=rabbitmq3; docker-compose exec $HOST rabbitmqctl stop_app && docker-compose exec $HOST rabbitmqctl reset && docker-compose exec $HOST rabbitmqctl join_cluster rabbit@rabbitmq-01 && docker-compose exec $HOST rabbitmqctl start_app
+   ```
+   Заходим в интерфейс 1 ноды, проверяем добавление нод в кластер. На этом сборка кластера завершена.
+
+### Удаление ноды из кластера
+
+   Чтобы убрать ноду из кластера, выполняем команды:
+   ```bash
+   docker-compose exec rabbitmq3 bash
+   rabbitmqctl stop_app
+   rabbitmqctl reset
+   rabbitmqctl start_app
+   ```
+   Нода `rabbitmq3` удалена из кластера.
+
